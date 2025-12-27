@@ -34,10 +34,17 @@ const generateMoves = (
   aux: number,
   result: Move[] = []
 ): Move[] => {
-  if (n === 0) return result;
+  if (n <= 0) return result;
+
+  // 1. Move n-1 from source → auxiliary
   generateMoves(n - 1, from, aux, to, result);
+
+  // 2. Move largest disk source → target
   result.push([from, to]);
+
+  // 3. Move n-1 from auxiliary → target
   generateMoves(n - 1, aux, to, from, result);
+
   return result;
 };
 
@@ -114,6 +121,8 @@ const HomePage: NextPage = () => {
   };
 
   const moveDisk = (from: number, to: number) => {
+    if (autoPlaying) return;
+
     if (!canDrop(from, to)) {
       setShakeTower(to);
       setTimeout(() => setShakeTower(null), 400);
@@ -171,8 +180,19 @@ const HomePage: NextPage = () => {
     setAutoPlaying(false);
   };
 
+  const applyMove = (from: number, to: number) => {
+    setTowers((prev) => {
+      const next = prev.map((t) => [...t]);
+      const disk = next[from].pop();
+      if (!disk) return prev;
+      next[to].push(disk);
+      return next;
+    });
+  };
+
   const startAutoSolve = () => {
     stopAutoSolve();
+
     const solution = generateMoves(diskCount, 0, 2, 1);
     setAutoPlaying(true);
 
@@ -181,9 +201,10 @@ const HomePage: NextPage = () => {
         setAutoPlaying(false);
         return;
       }
+
       autoTimer.current = setTimeout(() => {
         const [from, to] = solution[i];
-        moveDisk(from, to);
+        applyMove(from, to); // ✅ NOT moveDisk
         play(i + 1);
       }, 500);
     };
@@ -194,10 +215,12 @@ const HomePage: NextPage = () => {
   /* ---------------- Keyboard ---------------- */
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (autoPlaying) return;
+
     if (e.key >= '1' && e.key <= '3') handleTowerClick(Number(e.key) - 1);
     if (e.key === 'u') undo();
     if (e.key === 'r') redo();
-    if (e.key === 'a') autoPlaying ? stopAutoSolve() : startAutoSolve();
+    if (e.key === 'a') startAutoSolve();
   };
 
   const isValidTarget = (i: number) =>
@@ -224,6 +247,7 @@ const HomePage: NextPage = () => {
                 value={diskCount}
                 onChange={(e) => resetGame(Number(e.target.value))}
                 className="range range-primary range-sm w-32"
+                disabled={autoPlaying}
               />
               <span className="font-semibold">{diskCount}</span>
             </div>
@@ -290,18 +314,34 @@ const HomePage: NextPage = () => {
 
           <div className="card-actions mt-6 flex flex-col items-center gap-2">
             <div className="flex items-center justify-center gap-x-2">
-              <button className="btn" onClick={undo}>
+              <button
+                type="button"
+                className="btn"
+                onClick={undo}
+                disabled={autoPlaying}>
                 Undo
               </button>
-              <button className="btn" onClick={redo}>
+              <button
+                type="button"
+                className="btn"
+                onClick={redo}
+                disabled={autoPlaying}>
                 Redo
               </button>
             </div>
             <div className="flex items-center justify-center gap-x-2">
-              <button className="btn btn-secondary" onClick={startAutoSolve}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={startAutoSolve}
+                disabled={autoPlaying}>
                 Auto Solve
               </button>
-              <button className="btn btn-primary" onClick={() => resetGame()}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => resetGame()}
+                disabled={autoPlaying}>
                 Reset
               </button>
             </div>
