@@ -1,5 +1,6 @@
 import { NextPage } from 'next';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import confetti from 'canvas-confetti';
 
 type Tower = number[];
 type Move = [number, number];
@@ -69,6 +70,32 @@ const HomePage: NextPage = () => {
   const isWin = towers[2].length === diskCount;
 
   /* ---------------- Animation ---------------- */
+
+  useEffect(() => {
+    if (!isWin) return;
+
+    // Center burst
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+    });
+
+    // Side cannons
+    confetti({
+      particleCount: 80,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 },
+    });
+
+    confetti({
+      particleCount: 80,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 },
+    });
+  }, [isWin]);
 
   useLayoutEffect(() => {
     diskRefs.current.forEach((el, disk) => {
